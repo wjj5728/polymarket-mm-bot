@@ -4,7 +4,11 @@ import YAML from "yaml";
 
 import { hedgeIfNeeded } from "./hedge/index.js";
 import { simulateSingleSideFill } from "./hedge/sim-fill.js";
+import { isHedgeTimeout } from "./hedge/timeout.js";
 import { placeTwoSidedQuotes } from "./quote/index.js";
+import { forceRebalanceAllOpenOrders } from "./quote/rebalance.js";
+import { shouldPause } from "./risk/pause.js";
+import { buildRiskSnapshot } from "./risk/snapshot.js";
 import { scanMarkets } from "./scanner/index.js";
 import type { BotConfig, BotState } from "./types.js";
 
@@ -29,12 +33,26 @@ async function tick(config: BotConfig) {
 
   state = "MONITOR";
   const fillEvent = simulateSingleSideFill(quoteResult.executedPairs || []);
+
+  if (fillEvent && isHedgeTimeout(fillEvent, Date.now(), config.hedge_timeout_sec)) {
+    state = "REBALANCE";
+    const rebalance = await forceRebalanceAllOpenOrders();
+    console.log(`[rebalance] openBefore=${rebalance.openBefore} canceled=${rebalance.canceled} left=${rebalance.left}`);
+  }
+
   const hedgeResult = await hedgeIfNeeded(fillEvent);
   if (hedgeResult.hedged) {
     state = "HEDGE";
     console.log(`[hedge] hedged=true side=${hedgeResult.action.sideToHedge} order=${hedgeResult.orderId}`);
   } else {
     console.log(`[hedge] hedged=false reason=${hedgeResult.reason}`);
+  }
+
+  const risk = buildRiskSnapshot(fillEvent, -0.002);
+  const pause = shouldPause(risk, config);
+  if (pause.pause) {
+    state = "PAUSE";
+    console.log(`[risk] pause=true reason=${pause.reason}`);
   }
 
   console.log(`[bot] state=${state} interval=${config.scan_interval_ms}ms`);

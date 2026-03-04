@@ -1,6 +1,6 @@
 # polymarket-mm-bot
 
-自动化对冲做市脚本骨架（v0.5.0）。
+自动化对冲做市脚本骨架（v0.6.0）。
 
 ## 模块
 - `scanner`: 市场扫描与打分
@@ -19,6 +19,11 @@ pnpm dev
 
 ## 状态机
 `IDLE -> SCAN -> QUOTE -> MONITOR -> HEDGE -> REBALANCE -> PAUSE -> STOP`
+
+## v0.6.0 已完成
+- 新增对冲超时判定（hedge timeout）
+- 新增强制平衡器（rebalancer）：超时时批量撤单
+- 新增风险快照与暂停判定（回撤/延迟触发 PAUSE）
 
 ## v0.5.0 已完成
 - 新增单边成交模拟器（用于验证对冲流程）
