@@ -2,6 +2,8 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import YAML from "yaml";
 
+import { hedgeIfNeeded } from "./hedge/index.js";
+import { simulateSingleSideFill } from "./hedge/sim-fill.js";
 import { placeTwoSidedQuotes } from "./quote/index.js";
 import { scanMarkets } from "./scanner/index.js";
 import type { BotConfig, BotState } from "./types.js";
@@ -26,6 +28,15 @@ async function tick(config: BotConfig) {
   console.log(`[quote] planned=${quoteResult.planned}, active=${quoteResult.active}, expired=${quoteResult.expired}`);
 
   state = "MONITOR";
+  const fillEvent = simulateSingleSideFill(quoteResult.executedPairs || []);
+  const hedgeResult = await hedgeIfNeeded(fillEvent);
+  if (hedgeResult.hedged) {
+    state = "HEDGE";
+    console.log(`[hedge] hedged=true side=${hedgeResult.action.sideToHedge} order=${hedgeResult.orderId}`);
+  } else {
+    console.log(`[hedge] hedged=false reason=${hedgeResult.reason}`);
+  }
+
   console.log(`[bot] state=${state} interval=${config.scan_interval_ms}ms`);
 }
 

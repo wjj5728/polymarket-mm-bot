@@ -30,5 +30,6 @@ export async function placeTwoSidedQuotes(candidates: MarketCandidate[], config:
     expired,
     canceledTotal: refreshed.canceledPairs,
     sample: plans.slice(0, 2),
+    executedPairs: executed,
   };
 }
