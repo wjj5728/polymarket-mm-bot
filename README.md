@@ -1,6 +1,6 @@
 # polymarket-mm-bot
 
-自动化对冲做市脚本骨架（v1.3.0）。
+自动化对冲做市脚本骨架（v1.4.0）。
 
 ## 模块
 - `scanner`: 市场扫描与打分
@@ -19,6 +19,12 @@ EXCHANGE_MODE=mock pnpm dev
 
 ## 状态机
 `IDLE -> SCAN -> QUOTE -> MONITOR -> HEDGE -> REBALANCE -> PAUSE -> STOP`
+
+## v1.4.0 已完成
+- 新增失败告警通道（Telegram）
+- 新增熔断恢复通知（circuit recovered）
+- 新增运行事件日志落盘（`logs/events.jsonl`）
+- 启动健康检查异常时自动告警
 
 ## v1.3.0 已完成
 - 新增下单频率限流（`ORDER_RATE_LIMIT_PER_MIN`）

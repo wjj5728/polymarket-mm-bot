@@ -8,13 +8,19 @@ const state: BreakerState = {
   openUntil: 0,
 };
 
+let recoveryMessage: string | null = null;
+
 export function isCircuitOpen(now = Date.now()) {
   return now < state.openUntil;
 }
 
-export function onExchangeSuccess() {
+export function onExchangeSuccess(now = Date.now()) {
+  const wasOpen = now < state.openUntil || state.consecutiveFailures > 0;
   state.consecutiveFailures = 0;
   state.openUntil = 0;
+  if (wasOpen) {
+    recoveryMessage = "exchange circuit recovered";
+  }
 }
 
 export function onExchangeFailure(now = Date.now()) {
@@ -43,4 +49,10 @@ export function getBreakerState(now = Date.now()) {
     isOpen: now < state.openUntil,
     openUntil: state.openUntil,
   };
+}
+
+export function consumeRecoveryMessage() {
+  const value = recoveryMessage;
+  recoveryMessage = null;
+  return value;
 }
