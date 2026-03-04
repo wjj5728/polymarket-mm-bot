@@ -29,8 +29,16 @@ async function tick(config: BotConfig) {
   });
 
   state = "QUOTE";
-  const quoteResult = await placeTwoSidedQuotes(scanResult.filtered, config);
-  console.log(`[quote] planned=${quoteResult.planned}, active=${quoteResult.active}, expired=${quoteResult.expired}`);
+  let quoteResult;
+  try {
+    quoteResult = await placeTwoSidedQuotes(scanResult.filtered, config);
+    console.log(`[quote] planned=${quoteResult.planned}, active=${quoteResult.active}, expired=${quoteResult.expired}`);
+  } catch (error) {
+    state = "PAUSE";
+    console.log(`[risk] pause=true reason=${(error as Error).message}`);
+    console.log(`[bot] state=${state} interval=${config.scan_interval_ms}ms`);
+    return;
+  }
 
   state = "MONITOR";
   const fillEvent = simulateSingleSideFill(quoteResult.executedPairs || []);
@@ -61,7 +69,7 @@ async function tick(config: BotConfig) {
 
 async function main() {
   const config = await loadConfig();
-  console.log("[bot] polymarket-mm-bot v1.2.0 boot");
+  console.log("[bot] polymarket-mm-bot v1.3.0 boot");
 
   const health = await verifyExchangeConnection();
   if (health.ok) {

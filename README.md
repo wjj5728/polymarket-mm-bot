@@ -1,6 +1,6 @@
 # polymarket-mm-bot
 
-自动化对冲做市脚本骨架（v1.2.0）。
+自动化对冲做市脚本骨架（v1.3.0）。
 
 ## 模块
 - `scanner`: 市场扫描与打分
@@ -19,6 +19,12 @@ EXCHANGE_MODE=mock pnpm dev
 
 ## 状态机
 `IDLE -> SCAN -> QUOTE -> MONITOR -> HEDGE -> REBALANCE -> PAUSE -> STOP`
+
+## v1.3.0 已完成
+- 新增下单频率限流（`ORDER_RATE_LIMIT_PER_MIN`）
+- 新增交易熔断器（连续失败达到阈值后冷却暂停）
+- 新增主流程自动 PAUSE：触发限流/熔断时不再继续下单
+- 支持熔断参数：`EXCHANGE_FAILURE_THRESHOLD` / `EXCHANGE_CIRCUIT_COOLDOWN_SEC`
 
 ## v1.2.0 已完成
 - 新增真实适配器请求超时与重试（`POLYMARKET_HTTP_TIMEOUT_MS` / `POLYMARKET_HTTP_RETRY`）
