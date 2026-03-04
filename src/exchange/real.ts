@@ -8,6 +8,8 @@ type RealApiConfig = {
   apiKey: string;
   apiSecret: string;
   passphrase: string;
+  timeoutMs: number;
+  retryCount: number;
 };
 
 type RequestMethod = "GET" | "POST" | "DELETE";
@@ -17,12 +19,14 @@ function loadRealApiConfig(): RealApiConfig {
   const apiKey = process.env.POLYMARKET_API_KEY?.trim() || "";
   const apiSecret = process.env.POLYMARKET_API_SECRET?.trim() || "";
   const passphrase = process.env.POLYMARKET_API_PASSPHRASE?.trim() || "";
+  const timeoutMs = Number(process.env.POLYMARKET_HTTP_TIMEOUT_MS || 5000);
+  const retryCount = Number(process.env.POLYMARKET_HTTP_RETRY || 1);
 
   if (!baseUrl || !apiKey || !apiSecret || !passphrase) {
     throw new Error("real adapter missing env: POLYMARKET_API_BASE / KEY / SECRET / PASSPHRASE");
   }
 
-  return { baseUrl, apiKey, apiSecret, passphrase };
+  return { baseUrl, apiKey, apiSecret, passphrase, timeoutMs, retryCount };
 }
 
 function buildHeaders(method: RequestMethod, path: string, body: string, cfg: RealApiConfig) {
@@ -39,33 +43,59 @@ function buildHeaders(method: RequestMethod, path: string, body: string, cfg: Re
   };
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function callJson<T>(method: RequestMethod, path: string, bodyObj?: object): Promise<T> {
   const cfg = loadRealApiConfig();
   const body = bodyObj ? JSON.stringify(bodyObj) : "";
   const headers = buildHeaders(method, path, body, cfg);
 
-  const response = await fetch(`${cfg.baseUrl}${path}`, {
-    method,
-    headers,
-    body: method === "GET" ? undefined : body,
-  });
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`real adapter http ${response.status}: ${text}`);
+  for (let attempt = 0; attempt <= cfg.retryCount; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), cfg.timeoutMs);
+
+    try {
+      const response = await fetch(`${cfg.baseUrl}${path}`, {
+        method,
+        headers,
+        body: method === "GET" ? undefined : body,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`real adapter http ${response.status}: ${text}`);
+      }
+
+      return (await response.json()) as T;
+    } catch (error) {
+      clearTimeout(timer);
+      lastError = error as Error;
+      if (attempt < cfg.retryCount) {
+        await sleep(150 * (attempt + 1));
+        continue;
+      }
+    }
   }
 
-  return (await response.json()) as T;
+  throw new Error(`real adapter request failed after retry: ${lastError?.message || "unknown"}`);
 }
 
-function mapRecord(input: PlaceOrderInput, api: any): OrderRecord {
+function mapRecord(input: PlaceOrderInput, api: unknown): OrderRecord {
+  const raw = api as { orderId?: string; id?: string };
   return {
     marketId: input.marketId,
     side: input.side,
     price: input.price,
     size: input.size,
     ttlSec: input.ttlSec,
-    orderId: String(api.orderId || api.id || `real-${Date.now()}`),
+    orderId: String(raw.orderId || raw.id || `real-${Date.now()}`),
     status: "OPEN",
     createdAt: Date.now(),
   };
@@ -73,7 +103,7 @@ function mapRecord(input: PlaceOrderInput, api: any): OrderRecord {
 
 export const realAdapter: ExchangeAdapter = {
   async placeOrder(input: PlaceOrderInput): Promise<OrderRecord> {
-    const api = await callJson<any>("POST", "/orders", {
+    const api = await callJson<unknown>("POST", "/orders", {
       marketId: input.marketId,
       side: input.side,
       price: input.price,
@@ -91,7 +121,7 @@ export const realAdapter: ExchangeAdapter = {
   },
 
   async listOpenOrders() {
-    const api = await callJson<any[]>("GET", "/orders?status=open");
+    const api = await callJson<Array<Record<string, unknown>>>("GET", "/orders?status=open");
     return api.map((item) => ({
       marketId: String(item.marketId || "unknown"),
       side: item.side === "NO" ? "NO" : "YES",

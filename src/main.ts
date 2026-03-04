@@ -2,6 +2,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import YAML from "yaml";
 
+import { verifyExchangeConnection } from "./exchange/health.js";
 import { hedgeIfNeeded } from "./hedge/index.js";
 import { simulateSingleSideFill } from "./hedge/sim-fill.js";
 import { isHedgeTimeout } from "./hedge/timeout.js";
@@ -60,7 +61,15 @@ async function tick(config: BotConfig) {
 
 async function main() {
   const config = await loadConfig();
-  console.log("[bot] polymarket-mm-bot v0.1.0 boot");
+  console.log("[bot] polymarket-mm-bot v1.2.0 boot");
+
+  const health = await verifyExchangeConnection();
+  if (health.ok) {
+    console.log(`[exchange] health=ok latency=${health.latencyMs}ms openOrders=${health.openOrders}`);
+  } else {
+    console.log(`[exchange] health=degraded latency=${health.latencyMs}ms error=${health.error}`);
+  }
+
   await tick(config);
 }
 
