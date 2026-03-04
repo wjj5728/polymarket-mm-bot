@@ -1,0 +1,13 @@
+scan_interval_ms: 10000
+max_markets_active: 4
+order_ttl_sec: 30
+hedge_timeout_sec: 15
+delta_max: 0.02
+max_position_per_market: 100
+max_global_exposure: 500
+daily_max_loss_pct: 0.015
+channels:
+  telegram:
+    enabled: false
+    bot_token: ""
+    chat_id: ""

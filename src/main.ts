@@ -1,0 +1,29 @@
+import "dotenv/config";
+import { readFile } from "node:fs/promises";
+import YAML from "yaml";
+
+import type { BotConfig, BotState } from "./types.js";
+
+async function loadConfig(path = "config/default.yaml"): Promise<BotConfig> {
+  const raw = await readFile(path, "utf8");
+  return YAML.parse(raw) as BotConfig;
+}
+
+async function tick(config: BotConfig) {
+  let state: BotState = "IDLE";
+  state = "SCAN";
+  state = "QUOTE";
+  state = "MONITOR";
+  console.log(`[bot] state=${state} interval=${config.scan_interval_ms}ms`);
+}
+
+async function main() {
+  const config = await loadConfig();
+  console.log("[bot] polymarket-mm-bot v0.1.0 boot");
+  await tick(config);
+}
+
+main().catch((error) => {
+  console.error("[bot] fatal:", error);
+  process.exit(1);
+});
