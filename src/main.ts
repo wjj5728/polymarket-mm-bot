@@ -2,6 +2,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import YAML from "yaml";
 
+import { placeTwoSidedQuotes } from "./quote/index.js";
 import { scanMarkets } from "./scanner/index.js";
 import type { BotConfig, BotState } from "./types.js";
 
@@ -21,6 +22,9 @@ async function tick(config: BotConfig) {
   });
 
   state = "QUOTE";
+  const quoteResult = await placeTwoSidedQuotes(scanResult.filtered, config);
+  console.log(`[quote] planned=${quoteResult.planned}, active=${quoteResult.active}, expired=${quoteResult.expired}`);
+
   state = "MONITOR";
   console.log(`[bot] state=${state} interval=${config.scan_interval_ms}ms`);
 }
