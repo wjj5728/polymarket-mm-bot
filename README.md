@@ -1,6 +1,6 @@
 # polymarket-mm-bot
 
-自动化对冲做市脚本骨架（v0.1.0）。
+自动化对冲做市脚本骨架（v0.2.0）。
 
 ## 模块
 - `scanner`: 市场扫描与打分
@@ -19,6 +19,11 @@ pnpm dev
 
 ## 状态机
 `IDLE -> SCAN -> QUOTE -> MONITOR -> HEDGE -> REBALANCE -> PAUSE -> STOP`
+
+## v0.2.0 已完成
+- 市场扫描模块：mock 行情拉取
+- 候选市场打分：价格平衡/价差/深度/波动/奖励池/竞争度
+- 风控前置过滤：仅保留可执行候选池（按 max_markets_active 截断）
 
 ## 下一步
 - 接入真实市场数据与订单簿
