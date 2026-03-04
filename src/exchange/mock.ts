@@ -1,3 +1,4 @@
+import type { ExchangeAdapter } from "./adapter.js";
 import type { OrderRecord, PlaceOrderInput } from "./types.js";
 
 const orders = new Map<string, OrderRecord>();
@@ -26,3 +27,9 @@ export async function mockCancelOrder(orderId: string) {
 export async function mockListOpenOrders() {
   return [...orders.values()].filter((x) => x.status === "OPEN");
 }
+
+export const mockAdapter: ExchangeAdapter = {
+  placeOrder: mockPlaceOrder,
+  cancelOrder: mockCancelOrder,
+  listOpenOrders: mockListOpenOrders,
+};
