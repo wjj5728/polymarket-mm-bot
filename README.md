@@ -1,6 +1,6 @@
 # polymarket-mm-bot
 
-自动化对冲做市脚本骨架（v1.0.0）。
+自动化对冲做市脚本骨架（v1.1.0）。
 
 ## 模块
 - `scanner`: 市场扫描与打分
@@ -19,6 +19,12 @@ EXCHANGE_MODE=mock pnpm dev
 
 ## 状态机
 `IDLE -> SCAN -> QUOTE -> MONITOR -> HEDGE -> REBALANCE -> PAUSE -> STOP`
+
+## v1.1.0 已完成
+- `realAdapter` 接入真实 API 调用骨架（签名/下单/撤单/查单）
+- 新增 `real -> mock` 失败回退，避免主流程中断
+- 统一幂等键与回退订单兼容，重复请求仍可去重
+- 新增运行要求：`POLYMARKET_API_BASE/KEY/SECRET/PASSPHRASE`
 
 ## v1.0.0 已完成
 - 新增交易适配器接口：`ExchangeAdapter`

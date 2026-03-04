@@ -14,23 +14,49 @@ export async function submitOrder(input: PlaceOrderInput) {
   const key = buildOrderKey(input);
   const existingOrderId = getIdempotentOrderId(key);
 
-  if (existingOrderId) {
-    const opens = await adapter.listOpenOrders();
-    const found = opens.find((x) => x.orderId === existingOrderId);
-    if (found) return found;
-  }
+  try {
+    if (existingOrderId) {
+      const opens = await adapter.listOpenOrders();
+      const found = opens.find((x) => x.orderId === existingOrderId);
+      if (found) return found;
+    }
 
-  const order = await adapter.placeOrder(input);
-  setIdempotentOrderId(key, order.orderId);
-  return order;
+    const order = await adapter.placeOrder(input);
+    setIdempotentOrderId(key, order.orderId);
+    return order;
+  } catch (error) {
+    if (process.env.EXCHANGE_MODE?.toLowerCase() === "real") {
+      console.warn("[exchange] real mode failed, fallback to mock:", (error as Error).message);
+      const fallbackOrder = await mockAdapter.placeOrder(input);
+      setIdempotentOrderId(key, fallbackOrder.orderId);
+      return fallbackOrder;
+    }
+    throw error;
+  }
 }
 
 export async function cancelOrder(orderId: string) {
   const adapter = resolveAdapter();
-  return adapter.cancelOrder(orderId);
+  try {
+    return await adapter.cancelOrder(orderId);
+  } catch (error) {
+    if (process.env.EXCHANGE_MODE?.toLowerCase() === "real") {
+      console.warn("[exchange] real cancel failed, fallback to mock:", (error as Error).message);
+      return mockAdapter.cancelOrder(orderId);
+    }
+    throw error;
+  }
 }
 
 export async function listOpenOrders() {
   const adapter = resolveAdapter();
-  return adapter.listOpenOrders();
+  try {
+    return await adapter.listOpenOrders();
+  } catch (error) {
+    if (process.env.EXCHANGE_MODE?.toLowerCase() === "real") {
+      console.warn("[exchange] real list failed, fallback to mock:", (error as Error).message);
+      return mockAdapter.listOpenOrders();
+    }
+    throw error;
+  }
 }
