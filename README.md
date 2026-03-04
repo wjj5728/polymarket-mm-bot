@@ -1,6 +1,6 @@
 # polymarket-mm-bot
 
-自动化对冲做市脚本骨架（v0.8.0）。
+自动化对冲做市脚本骨架（v0.9.0）。
 
 ## 模块
 - `scanner`: 市场扫描与打分
@@ -19,6 +19,11 @@ pnpm dev
 
 ## 状态机
 `IDLE -> SCAN -> QUOTE -> MONITOR -> HEDGE -> REBALANCE -> PAUSE -> STOP`
+
+## v0.9.0 已完成
+- 新增参数网格回测脚本：`pnpm grid-backtest`
+- 支持组合扫描（fillProbability / maxFillSize / feeRate）
+- 输出最优参数建议与完整网格报告（JSON/CSV）
 
 ## v0.8.0 已完成
 - 新增 PnL 估算器（gross/fee/net）
